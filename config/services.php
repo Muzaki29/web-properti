@@ -35,4 +35,28 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | WhatsApp (wa.me deep links)
+    |--------------------------------------------------------------------------
+    |
+    | Digits only, country code included (e.g. 62812... for Indonesia).
+    | Used for public CTAs and inquiry lead routing.
+    |
+    */
+
+    'whatsapp' => [
+        'phone_e164_digits' => env('WHATSAPP_BUSINESS_PHONE', '6285781780369'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lead / inquiry notifications
+    |--------------------------------------------------------------------------
+    */
+
+    'inquiry' => [
+        'notify_email' => env('INQUIRY_NOTIFY_EMAIL'),
+    ],
+
 ];

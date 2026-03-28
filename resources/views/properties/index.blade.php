@@ -170,7 +170,7 @@
                                     @endif
                                 </div>
                                 <div class="flex items-center justify-between pt-1">
-                                    <a href="https://wa.me/6285781780369?text=Halo%20saya%20minat%20{{ urlencode($property->title) }}" class="text-sm font-semibold text-[#8BAE66] hover:text-[#6f8a48] inline-flex items-center gap-1">
+                                    <a href="https://wa.me/{{ config('services.whatsapp.phone_e164_digits') }}?text=Halo%20saya%20minat%20{{ urlencode($property->title) }}" rel="noopener noreferrer" class="text-sm font-semibold text-[#8BAE66] hover:text-[#6f8a48] inline-flex items-center gap-1">
                                         Tanya via WA
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21l1.65-4.95A8.97 8.97 0 013 9a9 9 0 1116.32 5.906L21 21l-5.093-1.34A9 9 0 019 18a8.97 8.97 0 01-6.95-3.35L3 21z"/></svg>
                                     </a>

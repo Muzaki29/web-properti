@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class Property extends Model
@@ -66,6 +67,11 @@ class Property extends Model
         return $this->hasMany(PropertyImage::class)->orderBy('order');
     }
 
+    public function inquiries(): HasMany
+    {
+        return $this->hasMany(Inquiry::class);
+    }
+
     public function primaryImage()
     {
         return $this->hasOne(PropertyImage::class)->where('is_primary', true);
@@ -99,6 +105,18 @@ class Property extends Model
                 }
                 $property->slug = $slug;
             }
+        });
+
+        static::saved(function (Property $property) {
+            $changes = $property->getChanges();
+            if ($changes !== [] && array_keys($changes) === ['views']) {
+                return;
+            }
+            Cache::forget((string) config('cache.keys.home_landing'));
+        });
+
+        static::deleted(function () {
+            Cache::forget((string) config('cache.keys.home_landing'));
         });
     }
 

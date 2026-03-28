@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PropertyImageUploadRequest;
 use App\Models\Property;
 use App\Models\Category;
 use App\Models\PropertyImage;
 use App\Models\User;
+use App\Services\PropertyImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -204,35 +206,15 @@ class AdminController extends Controller
         return view('admin.properties.images', compact('property'));
     }
 
-    public function uploadImages(Request $request, $id)
+    public function uploadImages(PropertyImageUploadRequest $request, $id)
     {
         $property = Property::findOrFail($id);
-        
-        $request->validate([
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-        ]);
-
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $index => $file) {
-                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('properties', $filename, 'public');
-                
-                $isPrimary = ($index == 0 && $property->images()->count() == 0) || 
-                             ($request->input('set_first_as_primary') && $index == 0);
-                
-                if ($isPrimary) {
-                    $property->images()->update(['is_primary' => false]);
-                }
-                
-                PropertyImage::create([
-                    'property_id' => $property->id,
-                    'image_path' => $path,
-                    'image_name' => $file->getClientOriginalName(),
-                    'order' => $property->images()->count(),
-                    'is_primary' => $isPrimary,
-                ]);
-            }
-        }
+        app(PropertyImageService::class)->uploadImages(
+            $property,
+            $request->file('images', []),
+            (bool) $request->boolean('set_first_as_primary'),
+            null
+        );
 
         return redirect()->route('admin.properties.images', $property->id)
             ->with('success', 'Gambar berhasil diupload!');
@@ -241,12 +223,7 @@ class AdminController extends Controller
     public function deleteImage($id)
     {
         $image = PropertyImage::findOrFail($id);
-        
-        if (Storage::disk('public')->exists($image->image_path)) {
-            Storage::disk('public')->delete($image->image_path);
-        }
-        
-        $image->delete();
+        app(PropertyImageService::class)->deleteImage($image);
 
         return redirect()->back()->with('success', 'Gambar berhasil dihapus!');
     }
@@ -254,9 +231,7 @@ class AdminController extends Controller
     public function setPrimaryImage($id)
     {
         $image = PropertyImage::findOrFail($id);
-        
-        $image->property->images()->update(['is_primary' => false]);
-        $image->update(['is_primary' => true]);
+        app(PropertyImageService::class)->setPrimaryImage($image);
 
         return redirect()->back()->with('success', 'Gambar utama berhasil diubah!');
     }

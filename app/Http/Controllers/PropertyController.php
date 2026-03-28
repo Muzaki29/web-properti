@@ -5,72 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Property;
 use App\Models\PropertyImage;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use App\Http\Requests\PropertyImageUploadRequest;
+use App\Http\Requests\PropertySearchRequest;
+use App\Services\PropertyImageService;
+use App\Services\PropertyQueryService;
+use Throwable;
 
 class PropertyController extends Controller
 {
-    public function index(Request $request)
+    public function index(PropertySearchRequest $request)
     {
-        $query = Property::where('is_active', true)
-            ->with(['category', 'primaryImage']);
-
-        // Filter by category
-        if ($request->has('category') && $request->category) {
-            $query->where('category_id', $request->category);
-        }
-
-        // Filter by property type
-        if ($request->has('type') && $request->type) {
-            $query->where('property_type', $request->type);
-        }
-
-        // Filter by status
-        if ($request->has('status') && $request->status) {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by city
-        if ($request->has('city') && $request->city) {
-            $query->where('city', 'like', '%' . $request->city . '%');
-        }
-
-        // Filter by price range
-        if ($request->has('min_price') && $request->min_price) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->has('max_price') && $request->max_price) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        // Search
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%')
-                    ->orWhere('description', 'like', '%' . $search . '%')
-                    ->orWhere('address', 'like', '%' . $search . '%')
-                    ->orWhere('city', 'like', '%' . $search . '%');
-            });
-        }
-
-        // Sort
-        $sort = $request->get('sort', 'latest');
-        switch ($sort) {
-            case 'price_low':
-                $query->orderBy('price', 'asc');
-                break;
-            case 'price_high':
-                $query->orderBy('price', 'desc');
-                break;
-            case 'latest':
-            default:
-                $query->latest();
-                break;
-        }
-
-        $properties = $query->paginate(12);
+        $properties = app(PropertyQueryService::class)->search($request, 12);
         $categories = Category::where('is_active', true)->get();
 
         return view('properties.index', compact('properties', 'categories'));
@@ -97,38 +42,24 @@ class PropertyController extends Controller
         return view('properties.show', compact('property', 'relatedProperties'));
     }
 
-    public function uploadImages(Request $request, $id)
+    public function uploadImages(PropertyImageUploadRequest $request, $id)
     {
-        $property = Property::findOrFail($id);
-        
-        $request->validate([
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // max 5MB
-        ]);
+        abort_unless(auth()->check() && auth()->user()->role === 'admin', 403);
 
-        $uploadedImages = [];
-        
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $index => $file) {
-                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('properties', $filename, 'public');
-                
-                $isPrimary = $request->input('is_primary') == $index || ($index == 0 && $property->images()->count() == 0);
-                
-                // Jika set primary, unset yang lain
-                if ($isPrimary) {
-                    $property->images()->update(['is_primary' => false]);
-                }
-                
-                $image = PropertyImage::create([
-                    'property_id' => $property->id,
-                    'image_path' => $path,
-                    'image_name' => $file->getClientOriginalName(),
-                    'order' => $property->images()->count(),
-                    'is_primary' => $isPrimary,
-                ]);
-                
-                $uploadedImages[] = $image;
-            }
+        $property = Property::findOrFail($id);
+        try {
+            $uploadedImages = app(PropertyImageService::class)->uploadImages(
+                $property,
+                $request->file('images', []),
+                (bool) $request->boolean('set_first_as_primary'),
+                $request->filled('is_primary') ? (int) $request->input('is_primary') : null
+            );
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal upload gambar. Silakan coba lagi.'
+            ], 500);
         }
 
         return response()->json([
@@ -140,14 +71,18 @@ class PropertyController extends Controller
 
     public function deleteImage($id)
     {
+        abort_unless(auth()->check() && auth()->user()->role === 'admin', 403);
+
         $image = PropertyImage::findOrFail($id);
-        
-        // Hapus file dari storage
-        if (Storage::disk('public')->exists($image->image_path)) {
-            Storage::disk('public')->delete($image->image_path);
+        try {
+            app(PropertyImageService::class)->deleteImage($image);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus gambar. Silakan coba lagi.'
+            ], 500);
         }
-        
-        $image->delete();
         
         return response()->json([
             'success' => true,
@@ -157,13 +92,18 @@ class PropertyController extends Controller
 
     public function setPrimaryImage($id)
     {
+        abort_unless(auth()->check() && auth()->user()->role === 'admin', 403);
+
         $image = PropertyImage::findOrFail($id);
-        
-        // Unset semua primary
-        $image->property->images()->update(['is_primary' => false]);
-        
-        // Set yang dipilih sebagai primary
-        $image->update(['is_primary' => true]);
+        try {
+            app(PropertyImageService::class)->setPrimaryImage($image);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengubah gambar utama. Silakan coba lagi.'
+            ], 500);
+        }
         
         return response()->json([
             'success' => true,
@@ -173,6 +113,8 @@ class PropertyController extends Controller
 
     public function manageImages($id)
     {
+        abort_unless(auth()->check() && auth()->user()->role === 'admin', 403);
+
         $property = Property::with('images')->findOrFail($id);
         return view('properties.manage-images', compact('property'));
     }

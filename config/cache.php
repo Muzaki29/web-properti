@@ -114,4 +114,14 @@ return [
 
     'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Application cache keys (avoid magic strings in models / controllers)
+    |--------------------------------------------------------------------------
+    */
+
+    'keys' => [
+        'home_landing' => 'home:landing:v1',
+    ],
+
 ];

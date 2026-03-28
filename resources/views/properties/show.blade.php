@@ -196,9 +196,11 @@
                         </a>
                     </div>
                 @endif
-                <button class="w-full bg-[#8BAE66] text-white px-4 py-3 rounded-lg hover:bg-[#7a9a55] transition font-semibold mb-4">
+                <a href="https://wa.me/{{ config('services.whatsapp.phone_e164_digits') }}?text=Halo%20saya%20tertarik%20dengan%20{{ urlencode($property->title) }}" rel="noopener noreferrer"
+                   target="_blank"
+                   class="w-full inline-flex items-center justify-center bg-[#8BAE66] text-white px-4 py-3 rounded-lg hover:bg-[#7a9a55] transition font-semibold mb-4">
                     Hubungi Sekarang
-                </button>
+                </a>
                 <div class="text-center text-sm text-gray-600">
                     <p>Dilihat {{ number_format($property->views) }} kali</p>
                 </div>

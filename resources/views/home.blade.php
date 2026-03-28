@@ -19,7 +19,7 @@
             <a href="#contact" class="hover:text-[#8BAE66]">Kontak</a>
         </nav>
         <div class="flex items-center gap-3">
-            <a href="https://wa.me/6285781780369" target="_blank" class="hidden sm:inline-flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg font-semibold shadow hover:shadow-lg transition">
+            <a href="https://wa.me/{{ config('services.whatsapp.phone_e164_digits') }}" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg font-semibold shadow hover:shadow-lg transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21l1.65-4.95A8.97 8.97 0 013 9a9 9 0 1116.32 5.906L21 21l-5.093-1.34A9 9 0 019 18a8.97 8.97 0 01-6.95-3.35L3 21z"/></svg>
                 Hubungi WA
             </a>
@@ -255,7 +255,7 @@
                                 <p class="text-gray-500 text-sm">Mulai dari</p>
                                 <p class="text-[#8BAE66] font-bold text-2xl">{{ $property->formatted_price }}</p>
                             </div>
-                            <a href="https://wa.me/6285781780369?text=Halo%20saya%20minat%20{{ urlencode($property->title) }}" class="inline-flex items-center gap-1 text-sm text-[#8BAE66] font-semibold hover:text-[#6f8a48]">
+                            <a href="https://wa.me/{{ config('services.whatsapp.phone_e164_digits') }}?text=Halo%20saya%20minat%20{{ urlencode($property->title) }}" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-[#8BAE66] font-semibold hover:text-[#6f8a48]">
                                 Tanya via WA
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21l1.65-4.95A8.97 8.97 0 013 9a9 9 0 1116.32 5.906L21 21l-5.093-1.34A9 9 0 019 18a8.97 8.97 0 01-6.95-3.35L3 21z"/></svg>
                             </a>
@@ -495,45 +495,66 @@
                         <p class="text-sm text-gray-500">Form cepat</p>
                         <h3 class="text-2xl font-semibold text-gray-900">Tim kami akan menghubungi ≤ 1x24 jam</h3>
                     </div>
-                    <a href="https://wa.me/6285781780369" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white font-semibold shadow hover:shadow-lg transition">
+                    <a href="https://wa.me/{{ config('services.whatsapp.phone_e164_digits') }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white font-semibold shadow hover:shadow-lg transition">
                         Chat via WA
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21l1.65-4.95A8.97 8.97 0 013 9a9 9 0 1116.32 5.906L21 21l-5.093-1.34A9 9 0 019 18a8.97 8.97 0 01-6.95-3.35L3 21z"/></svg>
                     </a>
                 </div>
-            <form action="#" method="POST" class="space-y-6">
+            @if(session('success'))
+                <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700" role="status" aria-live="polite">
+                    {{ session('success') }}
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert" aria-live="assertive">
+                    {{ session('error') }}
+                </div>
+            @endif
+            @if($errors->any())
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert" aria-live="assertive">
+                    <p class="font-semibold mb-1">Mohon periksa data berikut:</p>
+                    <ul class="list-disc pl-5">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form id="inquiry-form" action="{{ route('inquiries.store') }}" method="POST" class="space-y-6" novalidate>
                 @csrf
+                <input type="hidden" name="source" value="home">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="first_name" class="block text-sm font-medium text-gray-700 mb-2">Nama Depan</label>
-                        <input type="text" id="first_name" name="first_name" required
+                        <input type="text" id="first_name" name="first_name" value="{{ old('first_name') }}" required
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BAE66] focus:border-[#8BAE66] outline-none transition">
                     </div>
                     <div>
                         <label for="last_name" class="block text-sm font-medium text-gray-700 mb-2">Nama Belakang</label>
-                        <input type="text" id="last_name" name="last_name" required
+                        <input type="text" id="last_name" name="last_name" value="{{ old('last_name') }}" required
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BAE66] focus:border-[#8BAE66] outline-none transition">
                     </div>
                 </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Telepon (WhatsApp)</label>
-                    <input type="tel" id="phone" name="phone" required
+                    <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BAE66] focus:border-[#8BAE66] outline-none transition">
                 </div>
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input type="email" id="email" name="email" required
+                    <input type="email" id="email" name="email" value="{{ old('email') }}" required
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BAE66] focus:border-[#8BAE66] outline-none transition">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="project" class="block text-sm font-medium text-gray-700 mb-2">Pilih Proyek</label>
-                            <select id="project" name="project"
+                            <select id="project" name="project_title"
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BAE66] focus:border-[#8BAE66] outline-none transition">
                                 <option value="">Pilih salah satu</option>
                                 @foreach($featuredProperties as $property)
-                                    <option value="{{ $property->title }}">{{ $property->title }}</option>
+                                    <option value="{{ $property->title }}" {{ old('project_title') == $property->title ? 'selected' : '' }}>{{ $property->title }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -541,11 +562,11 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Preferensi Kontak</label>
                             <div class="flex items-center gap-3">
                                 <label class="flex items-center gap-2">
-                                    <input type="radio" name="contact_pref" value="whatsapp" checked class="text-[#8BAE66]">
+                                    <input type="radio" name="contact_pref" value="whatsapp" {{ old('contact_pref', 'whatsapp') == 'whatsapp' ? 'checked' : '' }} class="text-[#8BAE66]">
                                     <span class="text-sm text-gray-700">WhatsApp</span>
                                 </label>
                                 <label class="flex items-center gap-2">
-                                    <input type="radio" name="contact_pref" value="email" class="text-[#8BAE66]">
+                                    <input type="radio" name="contact_pref" value="email" {{ old('contact_pref') == 'email' ? 'checked' : '' }} class="text-[#8BAE66]">
                                     <span class="text-sm text-gray-700">Email</span>
                                 </label>
                             </div>
@@ -554,15 +575,24 @@
                 <div>
                     <label for="message" class="block text-sm font-medium text-gray-700 mb-2">Pesan</label>
                     <textarea id="message" name="message" rows="5" required
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BAE66] focus:border-[#8BAE66] outline-none transition" placeholder="Ceritakan kebutuhan Anda, jadwal survey, atau budget."></textarea>
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BAE66] focus:border-[#8BAE66] outline-none transition" placeholder="Ceritakan kebutuhan Anda, jadwal survey, atau budget.">{{ old('message') }}</textarea>
                 </div>
-                <button type="submit" class="w-full bg-[#8BAE66] hover:bg-[#7a9a55] text-white px-6 py-4 rounded-lg font-semibold text-lg transition shadow-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="submit" class="w-full bg-[#8BAE66] hover:bg-[#7a9a55] text-white px-6 py-4 rounded-lg font-semibold text-lg transition shadow-lg flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
                         Kirim & Jadwalkan Konsultasi
                 </button>
             </form>
+            <script>
+                document.getElementById('inquiry-form')?.addEventListener('submit', function () {
+                    const btn = this.querySelector('button[type="submit"]');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.setAttribute('aria-busy', 'true');
+                    }
+                });
+            </script>
             </div>
             <div class="bg-white p-8 rounded-xl shadow-lg">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Kantor & Dukungan</h3>
